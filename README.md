@@ -1,5 +1,5 @@
-#说明
-本项目初衷为实现各NLP任务框架，不断完善
+# 说明
+本项目实现各NLP任务，不断完善
 # 目录
 ```
 ├── data 存放项目数据的目录
@@ -26,13 +26,14 @@
 └── task 各个任务的启动代码
     └── ner.py 实体识别启动代码
 ```
-＃　环境安装
-```pip install -r requirements.txt
+# 环境配置
+- python3.7
+```pip install -r requirements.txt```
 
 # 实体识别
 ## 环境配置
--下载Bert预训练模型解压到pretrained_model_file/bert下
--数据集放到data目录下
+- 下载Bert预训练模型解压到pretrained_model_file/bert下
+- 数据集放到data目录下
 ## 数据格式（每个样本占一行，每行格式如下）
 ```{"text": "现任长春大学管理学院教授、长春高新技术产业(集团)股份有限公司董事会外部董事。", "entity_list": [{"entity_index": {"begin": 10, "end": 12}, "entity_type": "TITLE", "entity": "教授"}, {"entity_index": {"begin": 31, "end": 38}, "entity_type": "TITLE", "entity": "董事会外部董事"}]}```
 ## 训练
