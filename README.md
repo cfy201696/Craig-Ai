@@ -1,6 +1,4 @@
 # 目录
-.
-├── 1.txt
 ├── data
 │   ├── ResumeNER
 │   │   ├── dev_1000_filter.txt
