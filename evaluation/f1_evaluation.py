@@ -78,9 +78,9 @@ def f1_eva_ner(predict_list,label_list,indexed = True,save = False,save_path = N
                     else:
                         r_error_list.append(json.dumps({"text": text, "error":j, "true_list":list(single_predict_set)},ensure_ascii=False))
 
-    precision = round(p_tp / (p_count + 1e-8), 3)
-    recall = round(r_tp / (r_count + 1e-8), 3)
-    f1 = round(2 * precision * recall / (precision + recall + 1e-8), 3)
+    precision = round(p_tp / (p_count + 1e-8), 4)
+    recall = round(r_tp / (r_count + 1e-8), 4)
+    f1 = round(2 * precision * recall / (precision + recall + 1e-8), 4)
 
     if save:
         p_err_path = os.path.join(save_path, "p_evaluation_error.log")
@@ -176,9 +176,9 @@ def f1_eva_ner_label_level(predict_list,label_list,indexed = True,save = False,s
         p_count = p_count_predicate[predicate]
         r_count = r_count_predicate[predicate]
 
-        precision = round(p_tp / (p_count + 1e-8), 3)
-        recall = round(r_tp / (r_count + 1e-8), 3)
-        f1 = round(2 * precision * recall / (precision + recall + 1e-8), 3)
+        precision = round(p_tp / (p_count + 1e-8), 4)
+        recall = round(r_tp / (r_count + 1e-8), 4)
+        f1 = round(2 * precision * recall / (precision + recall + 1e-8), 4)
 
         ans_dict[predicate] = {"F1":f1,"P":precision,"R":recall}
 

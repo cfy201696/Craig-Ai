@@ -191,32 +191,58 @@ if model_config["train_file_path"]:
             best_f1 = f1
             model.save_model(model_config["model_file_path"]+model_config["model_name"])
             print("错误类型和个数：", sta_error_type(source_dev_data, transform_back_dev_data))
-        print("训练完成：{}， 训练集loss：{}，验证集loss：{}，验证集F1：{}，最高F1：{}".format(
-            i, np.mean(loss_list), dev_loss, f1, best_f1))
-
+            print("label lavel:", ans_dict)
+        print("训练完成：{}， 训练集loss：{}，验证集loss：{}，验证集P：{}，验证集R：{}，验证集F1：{}，最高F1：{}".format(
+            i, np.mean(loss_list), dev_loss, p, r, f1, best_f1))
         print("-"*100)
 
+if model_config["test_file_path"]:
+
+    with open(model_config["model_file_path"] + model_config["model_name"] + "_model_config.json") as f:
+        config = json.load(f)
+
+    config["test_file_path"] =  model_config["test_file_path"]
+    print(config)
 
 
+    model = bert_bilstm_crf(
+        pretrain_model_path=config["bert_model_path"],
+        lstm_hidden_size=config["lstm_hidden_size"],
+        num_layers=config["num_layers"],
+        dropout_ratio=config["dropout_ratio"],
+        bidirectional=config["bidirectional"],
+        lable_num=len(config["label2id"]),
+        device=device)
+    model.load_state_dict(torch.load(model_config["model_file_path"]+model_config["model_name"]))
+    model.to(device)
+    model.eval()
 
+    test_dataset = ner_data_process_machine(
+        file_path=config["test_file_path"], sentence_max_len=config["sentence_max_length"],
+        label2id=config["label2id"], tokenizer_path=config["bert_model_path"])
+    # dev_dataloader = data.dataloader(dev_dataset,
+    #                                    batch_size=model_config["batch_size"], shuffle=True, num_workers=4)
+    # 得到验证集的loss和F1，p，r
+    test_text_list, test_x, test_y, test_start_index, test_sen_len = \
+        test_dataset.extract_data(copy.deepcopy(test_dataset.get_data()))
+    source_test_data, transform_back_test_data = test_dataset.transform_data_back(
+        test_dataset.uni_data(copy.deepcopy(test_text_list), copy.deepcopy(test_x),
+                             copy.deepcopy(test_y), copy.deepcopy(test_start_index),
+                              copy.deepcopy(test_sen_len)))
 
+    print("测试集上限P R F1：", f1_eva_ner(transform_back_test_data, source_test_data))
 
+    test_x_input = torch.tensor(test_x, dtype=torch.long).to(device)
+    test_y = torch.tensor(test_y, dtype=torch.long).to(device)
 
+    test_output, test_loss = model.decode(test_x_input, max_len=config["sentence_max_length"],
+                                        sen_len=test_sen_len, use_cuda=True, dev_y=test_y)
 
+    source_test_data, predict_test_data = \
+        test_dataset.transform_data_back(
+            test_dataset.uni_data(test_text_list, test_x, test_output, test_start_index, test_sen_len))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    p, r, f1 = f1_eva_ner(predict_test_data, source_test_data)
+    print("测试total p, r, f1表现：{}，{}，{}".format(p, r, f1))
+    ans_dict = f1_eva_ner_label_level(predict_test_data, source_test_data)
+    print("eva_ner_label_level: ", ans_dict)
