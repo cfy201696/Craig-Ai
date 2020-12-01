@@ -30,7 +30,7 @@ parser.add_argument("-mn","--model_name", default="v1")
 
 # 模型结构参数
 parser.add_argument("-ms","--model_structure", help="模型结构", default="bert_bilstm_crf")
-parser.add_argument("-bmp","--bert_model_path", default="/gpfs/share/home/1801220008/python37/trans_ext_ner_and_re/data/pretrained_model/chinese_L-12_H-768_A-12")
+parser.add_argument("-bmp","--bert_model_path", default="../pretrained_model_file/bert/chinese_L-12_H-768_A-12")
 
 # lstm的参数
 parser.add_argument("-lhs","--lstm_hidden_size", help="lstm的隐藏单元数", default=384)
