@@ -31,6 +31,7 @@
 - ```pip install -r requirements.txt```
 
 # 实体识别
+pytorch版的Bert-bilstm-crf模型
 ## 环境配置
 - 下载Bert预训练模型解压到pretrained_model_file/bert下
 - 数据集放到data目录下
