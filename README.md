@@ -38,7 +38,7 @@ pytorch版的Bert-bilstm-crf模型
 ## 数据格式（每个样本占一行，每行格式如下）
 ```{"text": "现任长春大学管理学院教授、长春高新技术产业(集团)股份有限公司董事会外部董事。", "entity_list": [{"entity_index": {"begin": 10, "end": 12}, "entity_type": "TITLE", "entity": "教授"}, {"entity_index": {"begin": 31, "end": 38}, "entity_type": "TITLE", "entity": "董事会外部董事"}]}```
 ## 训练（task目录下）
-```python -u ner.py -tr ../data/yidu-s4k/train_10.txt -de ../data/yidu-s4k/dev_100.txt -mfp ../data/yidu-s4k/v5 -mn v5 -lhs 200 -bs 5 -lr 1e-5 -sml 512 -e 2000```
+```python -u ner.py -tr ../data/yidu-s4k/train_10.txt -de ../data/yidu-s4k/dev_100.txt -mfp ../data/yidu-s4k/ -mn v1 -lhs 200 -bs 5 -lr 1e-5 -sml 512 -e 2000```
 - -tr 为训练集的路径
 - -de 为验证集的路径
 - -mfp 为训练的模型和模型配置保存路径
@@ -49,7 +49,7 @@ pytorch版的Bert-bilstm-crf模型
 - -sml 最大句子长度
 - -e 迭代训练次数
 ## 测试（task目录下）
-```python -u ner.py -te ../data/yidu-s4k/dev_100.txt -mfp ../data/yidu-s4k/v5 -mn v5 -lhs 200```
+```python -u ner.py -te ../data/yidu-s4k/dev_100.txt -mfp ../data/yidu-s4k/ -mn v1 -lhs 200```
 - -te 测试集路径
 - -mfp 需要加载的模型和模型配置路径
 - -mn 加载模型名称
