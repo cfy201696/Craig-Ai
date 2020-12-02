@@ -1,5 +1,5 @@
 # 说明
-本项目实现各NLP任务，不断完善
+本项目基于pytorch深度学习框架实现各NLP任务，不断完善中.
 # 目录
 ```
 ├── data 存放项目数据的目录
@@ -32,7 +32,7 @@
 - ```pip install -r requirements.txt```
 
 # 实体识别
-pytorch版的Bert-bilstm-crf模型
+通过task文件夹下ner.py文件进行实体识别的训练和推理,目前已经实现bert bilstm crf和bert crf模型.
 ## 环境配置
 - 下载Bert预训练模型解压到pretrained_model_file/bert下(可新建此目录)，预训练模型下载:链接：https://pan.baidu.com/s/1KauLJeiJUErWu4YdYEuKiA ,提取码：18z2 
 - 数据集放到data目录下
@@ -49,6 +49,8 @@ pytorch版的Bert-bilstm-crf模型
 - -lr 学习率
 - -sml 最大句子长度
 - -e 迭代训练次数
+- -ms 模型结构,默认为bert_bilstm_crf(可选bert_crf)
+- -ft 是否微调预训练模型,默认微调
 ## 测试（task目录下）
 ```python -u ner.py -te ../data/yidu-s4k/dev_100.txt -mfp ../data/yidu-s4k/ -mn v1 -lhs 200```
 - -te 测试集路径
