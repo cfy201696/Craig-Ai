@@ -14,6 +14,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 from pytorch_transformers import BertModel, AdamW, WarmupLinearSchedule
 from process_data.ner_process import ner_data_process_machine
 from model.bert_bilstm_crf import bert_bilstm_crf
+from model.bert_crf import bert_crf
 from torch.utils import data
 from tensorboardX import SummaryWriter
 from evaluation.f1_evaluation import f1_eva_ner, f1_eva_ner_label_level
@@ -31,6 +32,8 @@ parser.add_argument("-mn","--model_name", default="v1")
 # 模型结构参数
 parser.add_argument("-ms","--model_structure", help="模型结构", default="bert_bilstm_crf")
 parser.add_argument("-bmp","--bert_model_path", default="../pretrained_model_file/bert/chinese_L-12_H-768_A-12")
+parser.add_argument("-ft","--fine_tuning", help="微调", default=True)
+
 
 # lstm的参数
 parser.add_argument("-lhs","--lstm_hidden_size", help="lstm的隐藏单元数", default=384)
@@ -60,6 +63,7 @@ model_config = {
     "model_name" : args.model_name,
     "model_structure" : args.model_structure,
     "bert_model_path":args.bert_model_path,
+    "fine_tuning":str_to_bool(args.fine_tuning),
     "lstm_hidden_size" : int(args.lstm_hidden_size),
     "num_layers" : int(args.num_layers),
     "bidirectional" : str_to_bool(args.bidirectional),
@@ -74,6 +78,7 @@ model_config = {
 if model_config["train_file_path"]:
 
     if os.path.exists(os.path.join(model_config["model_file_path"],'Result',model_config["model_name"])):
+        # os.rmdir(os.path.join(model_config["model_file_path"],'Result',model_config["model_name"]))
         shutil.rmtree(os.path.join(model_config["model_file_path"],'Result',model_config["model_name"]))
 
     summary_writer = SummaryWriter(os.path.join(model_config["model_file_path"],'Result',model_config["model_name"]))
@@ -107,35 +112,45 @@ if model_config["train_file_path"]:
     dev_x_input = torch.tensor(dev_x, dtype=torch.long).to(device)
     dev_y = torch.tensor(dev_y, dtype=torch.long).to(device)
 
-    model = bert_bilstm_crf(
-        pretrain_model_path = model_config["bert_model_path"],
-        lstm_hidden_size = model_config["lstm_hidden_size"],
-        num_layers = model_config["num_layers"],
-        dropout_ratio = model_config["dropout_ratio"],
-        bidirectional = model_config["bidirectional"],
-        lable_num = len(model_config["label2id"]),
-        device = device)
+    if model_config["model_structure"] == "bert_bilstm_crf":
+        model = bert_bilstm_crf(
+            pretrain_model_path = model_config["bert_model_path"],
+            lstm_hidden_size = model_config["lstm_hidden_size"],
+            num_layers = model_config["num_layers"],
+            dropout_ratio = model_config["dropout_ratio"],
+            bidirectional = model_config["bidirectional"],
+            lable_num = len(model_config["label2id"]),
+            device = device)
+    elif model_config["model_structure"] == "bert_crf":
+        model = bert_crf(pretrain_model_path = model_config["bert_model_path"],
+                         lable_num = len(model_config["label2id"]),
+                         device = device)
 
     model.to(device)
-
-    model.model_structure()
 
     num_total_steps = model_config["epochs"] * len(train_dataset) / model_config["batch_size"]
     num_warmup_steps = int(0.1 * num_total_steps)
 
-    warm_up_params = []
+    if model_config["fine_tuning"]:
+        warm_up_params = []
     non_warm_up_params = []
 
     for name, param in model.named_parameters():
         if "bert" in name:
-            warm_up_params.append(param)
+            if model_config["fine_tuning"]:
+                warm_up_params.append(param)
+            else:
+                param.requires_grad = False
         else:
             non_warm_up_params.append(param)
 
-    warm_up_optimizer = AdamW(warm_up_params, lr=model_config["learning_rate"],
-                              correct_bias=False)  # To reproduce BertAdam specific behavior set correct_bias=False
-    scheduler = WarmupLinearSchedule(warm_up_optimizer, warmup_steps=num_warmup_steps,
-                                     t_total=num_total_steps)  # PyTorch scheduler
+    model.model_structure()
+
+    if model_config["fine_tuning"]:
+        warm_up_optimizer = AdamW(warm_up_params, lr=model_config["learning_rate"],
+                                  correct_bias=False)  # To reproduce BertAdam specific behavior set correct_bias=False
+        scheduler = WarmupLinearSchedule(warm_up_optimizer, warmup_steps=num_warmup_steps,
+                                         t_total=num_total_steps)  # PyTorch scheduler
     non_warm_up_optimizer = optim.Adam(non_warm_up_params, lr=model_config["learning_rate"] * 10)
 
     best_f1 = 0
@@ -153,19 +168,20 @@ if model_config["train_file_path"]:
 
             # x_input = torch.tensor(x, dtype=torch.long).to(device)
             # y = torch.tensor(y, 0.T, dtype=torch.long).to(device)
-            x_input = x.to(device)
-            y = y.to(device)
+            x_input = x.to(device).long()
+            y = y.to(device).long()
 
             output = model(x_input)
             loss = model.get_loss(output, model_config["sentence_max_length"], sen_len, y = y)
 
             loss.backward()
 
-            warm_up_optimizer.step()
-            non_warm_up_optimizer.step()
-            scheduler.step()
 
-            warm_up_optimizer.zero_grad()
+            if model_config["fine_tuning"]:
+                warm_up_optimizer.step()
+                scheduler.step()
+                warm_up_optimizer.zero_grad()
+            non_warm_up_optimizer.step()
             non_warm_up_optimizer.zero_grad()
 
             loss_list.append(loss.item())

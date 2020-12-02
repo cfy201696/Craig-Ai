@@ -1,36 +1,23 @@
 # -*- coding:utf-8 -*-
 import sys
-
+sys.path.append("../")
 from pytorch_transformers import BertModel
 import torch
 import torch.nn as nn
 from model.base_model import base_model
 from torchcrf import CRF
+
 sys.path.append("../")
 from layers.utensil import _generate_mask
 
-class bert_bilstm_crf(base_model):
-    def __init__(self, pretrain_model_path = None, pretrain_output_size = 768, lstm_hidden_size = 384,
-                 num_layers = 1, dropout_ratio = 0.5, batch_first = True, bidirectional = True, lable_num = 4, device = "cpu"):
-        super(bert_bilstm_crf, self).__init__()
+class bert_crf(base_model):
+    def __init__(self, pretrain_model_path = None, pretrain_output_size = 768,
+                 batch_first = True, lable_num = 4, device = "cpu"):
+        super(bert_crf, self).__init__()
 
         self.bert = BertModel.from_pretrained(pretrain_model_path)
 
-        self.bilstm = nn.LSTM(
-                input_size=pretrain_output_size,
-                hidden_size=lstm_hidden_size,
-                num_layers=num_layers,
-                dropout=dropout_ratio,
-                batch_first=batch_first,
-                bidirectional=bidirectional
-            )
-
-        # self.dropout = SpatialDropout(drop_p)
-        # self.layer_norm = LayerNorm(hidden_size * 2)
-
-        self.dropout = nn.Dropout(p=dropout_ratio)
-
-        self.linear = nn.Linear(lstm_hidden_size * 2, lable_num)
+        self.linear = nn.Linear(pretrain_output_size, lable_num)
 
         self.crf = CRF(lable_num, batch_first = batch_first)
 
@@ -42,11 +29,7 @@ class bert_bilstm_crf(base_model):
 
         emb_outputs = self.bert(x, token_type_ids=segments_ids)
 
-        bilstm_output, _ = self.bilstm(emb_outputs[0])
-
-        drop_out = self.dropout(bilstm_output)
-
-        linear_output = self.linear(drop_out)
+        linear_output = self.linear(emb_outputs[0])
 
         return linear_output
 
@@ -63,5 +46,3 @@ class bert_bilstm_crf(base_model):
         if dev_y != None:
             loss = self.get_loss(output, max_len, sen_len, y = dev_y, use_cuda = use_cuda)
         return self.crf.decode(output, mask=_generate_mask(sen_len, max_len, use_cuda)), loss
-
-

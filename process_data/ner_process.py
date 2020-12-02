@@ -26,7 +26,7 @@ class ner_data_process_machine(Dataset):
         else:
             self.label2id = {"O":0}
             id = 1
-            with open(self.file_path) as f:
+            with open(self.file_path, encoding="utf-8") as f:
                 for line in f:
                     for entity in json.loads(line)["entity_list"]:
                         entity_type = entity["entity_type"]
@@ -65,7 +65,7 @@ class ner_data_process_machine(Dataset):
 
         source_data = []
         # self.text_list = []
-        with open(self.file_path) as f:
+        with open(self.file_path, encoding="utf-8") as f:
             for line in f:
                 line_json = json.loads(line)
                 text = line_json["text"]
