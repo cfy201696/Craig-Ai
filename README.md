@@ -27,6 +27,7 @@
     └── ner.py 实体识别启动代码
 ```
 # 环境配置
+- Linux 建议在Linux下使用,Windows下可能会出现一些bug
 - python3.7
 - ```pip install -r requirements.txt```
 
