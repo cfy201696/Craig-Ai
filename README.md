@@ -14,17 +14,13 @@
 ├── layers 模型的层
 │   └── utensil.py mask函数
 ├── LICENSE 证书
-├── model 各个模型
-│   ├── bert_bilstm_crf.py Bert_bilstm_crf模型
+├── model 各个模型,如bert_bilstm_crf
 ├── pretrained_model_file 预训练模型路径
 │   └── bert Bert的预训模型
 ├── process_data 数据的预处理函数
-│   ├── ner_process.py 实体识别数据预处理
-│   └── sta_error_type.py 实体识别测试的错误类型统计函数
 ├── README.md 
 ├── requirements.txt
-└── task 各个任务的启动代码
-    └── ner.py 实体识别启动代码
+└── task 各个任务的启动文件
 ```
 # 环境配置
 - Linux(建议在Linux下使用,Windows下可能会出现一些bug)
