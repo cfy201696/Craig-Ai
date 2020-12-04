@@ -37,6 +37,7 @@ class bert_bilstm_crf(base_model):
         self.device = device
 
     def forward(self, x):
+        x = x.to(self.device).long()
 
         segments_ids = torch.zeros(x.shape, dtype=torch.long).to(self.device)
 
@@ -51,6 +52,7 @@ class bert_bilstm_crf(base_model):
         return linear_output
 
     def get_loss(self, linear_output, max_len, sen_len, y = None, use_cuda = True):
+        y = y.to(self.device).long()
         log_likelihood = self.crf(linear_output, y,
                                   mask=_generate_mask(sen_len, max_len, use_cuda),
                                   reduction='mean')
@@ -58,9 +60,11 @@ class bert_bilstm_crf(base_model):
 
     @torch.no_grad()
     def decode(self, dev_x, max_len = None, sen_len = None, use_cuda = None, dev_y = None):
+        dev_x = torch.tensor(dev_x, dtype=torch.long).to(self.device)
         output = self.forward(x = dev_x)
         loss = None
         if dev_y != None:
+            dev_y = torch.tensor(dev_y, dtype=torch.long).to(self.device)
             loss = self.get_loss(output, max_len, sen_len, y = dev_y, use_cuda = use_cuda)
         return self.crf.decode(output, mask=_generate_mask(sen_len, max_len, use_cuda)), loss
 

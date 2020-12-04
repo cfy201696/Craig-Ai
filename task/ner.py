@@ -11,9 +11,10 @@ import torch
 import shutil
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-from pytorch_transformers import BertModel, AdamW, WarmupLinearSchedule
+from pytorch_transformers import AdamW, WarmupLinearSchedule
 from process_data.ner_process import ner_data_process_machine
 from model.bert_bilstm_crf import bert_bilstm_crf
+from model.w2v_bilstm_crf import w2v_bilstm_crf
 from model.bert_crf import bert_crf
 from torch.utils import data
 from tensorboardX import SummaryWriter
@@ -31,8 +32,9 @@ parser.add_argument("-mn","--model_name", default="v1")
 
 # 模型结构参数
 parser.add_argument("-ms","--model_structure", help="模型结构", default="bert_bilstm_crf")
-parser.add_argument("-bmp","--bert_model_path", default="../pretrained_model_file/bert/chinese_L-12_H-768_A-12")
-parser.add_argument("-ft","--fine_tuning", help="微调", default=True)
+parser.add_argument("-mp","--model_path", default="../pretrained_model_file/bert/chinese_L-12_H-768_A-12")
+parser.add_argument("-ft","--fine_tuning", help="微调", default=False)
+parser.add_argument("-pos","--pretrain_output_size", help="预训练模型的输出维度", default=768)
 
 
 # lstm的参数
@@ -62,8 +64,9 @@ model_config = {
     "model_file_path" : args.model_file_path,
     "model_name" : args.model_name,
     "model_structure" : args.model_structure,
-    "bert_model_path":args.bert_model_path,
+    "model_path":args.model_path,
     "fine_tuning":str_to_bool(args.fine_tuning),
+    "pretrain_output_size":int(args.pretrain_output_size),
     "lstm_hidden_size" : int(args.lstm_hidden_size),
     "num_layers" : int(args.num_layers),
     "bidirectional" : str_to_bool(args.bidirectional),
@@ -84,10 +87,11 @@ if model_config["train_file_path"]:
     summary_writer = SummaryWriter(os.path.join(model_config["model_file_path"],'Result',model_config["model_name"]))
 
     train_dataset = ner_data_process_machine(file_path = model_config["train_file_path"],
+                                             model_structure = model_config["model_structure"],
                                              sentence_max_len = model_config["sentence_max_length"],
-                                             tokenizer_path = model_config["bert_model_path"])
+                                             tokenizer_path = model_config["model_path"])
     train_dataloader = data.DataLoader(train_dataset,
-                                       batch_size=model_config["batch_size"], shuffle=True, num_workers=4)
+                                       batch_size=model_config["batch_size"], shuffle=True, num_workers=0)
 
     model_config["label2id"] = train_dataset.get_label2id()
 
@@ -95,8 +99,11 @@ if model_config["train_file_path"]:
         f.write(json.dumps(model_config, ensure_ascii=False))
 
     dev_dataset = ner_data_process_machine(
-        file_path = model_config["dev_file_path"], sentence_max_len = model_config["sentence_max_length"],
-        label2id = model_config["label2id"], tokenizer = train_dataset.get_tokenizer())
+        file_path = model_config["dev_file_path"],
+        sentence_max_len = model_config["sentence_max_length"],
+        model_structure=model_config["model_structure"],
+        label2id = model_config["label2id"],
+        tokenizer = train_dataset.get_tokenizer())
     # dev_dataloader = data.dataloader(dev_dataset,
     #                                    batch_size=model_config["batch_size"], shuffle=True, num_workers=4)
 
@@ -109,12 +116,12 @@ if model_config["train_file_path"]:
 
     print("验证集上限P R F1：", f1_eva_ner(transform_back_dev_data, source_dev_data))
 
-    dev_x_input = torch.tensor(dev_x, dtype=torch.long).to(device)
-    dev_y = torch.tensor(dev_y, dtype=torch.long).to(device)
+    # dev_x_input = torch.tensor(dev_x, dtype=torch.long).to(device)
+    # dev_y = torch.tensor(dev_y, dtype=torch.long).to(device)
 
     if model_config["model_structure"] == "bert_bilstm_crf":
         model = bert_bilstm_crf(
-            pretrain_model_path = model_config["bert_model_path"],
+            pretrain_model_path = model_config["model_path"],
             lstm_hidden_size = model_config["lstm_hidden_size"],
             num_layers = model_config["num_layers"],
             dropout_ratio = model_config["dropout_ratio"],
@@ -122,9 +129,19 @@ if model_config["train_file_path"]:
             lable_num = len(model_config["label2id"]),
             device = device)
     elif model_config["model_structure"] == "bert_crf":
-        model = bert_crf(pretrain_model_path = model_config["bert_model_path"],
+        model = bert_crf(pretrain_model_path = model_config["model_path"],
                          lable_num = len(model_config["label2id"]),
                          device = device)
+    elif model_config["model_structure"] == "w2v_bilstm_crf":
+        model = w2v_bilstm_crf(
+            pretrain_model_path = model_config["model_path"],
+            pretrain_output_size = model_config["pretrain_output_size"],
+            lstm_hidden_size = model_config["lstm_hidden_size"],
+            num_layers = model_config["num_layers"],
+            dropout_ratio = model_config["dropout_ratio"],
+            bidirectional = model_config["bidirectional"],
+            lable_num = len(model_config["label2id"]),
+            device = device)
 
     model.to(device)
 
@@ -168,14 +185,11 @@ if model_config["train_file_path"]:
 
             # x_input = torch.tensor(x, dtype=torch.long).to(device)
             # y = torch.tensor(y, 0.T, dtype=torch.long).to(device)
-            x_input = x.to(device).long()
-            y = y.to(device).long()
 
-            output = model(x_input)
+            output = model(x)
             loss = model.get_loss(output, model_config["sentence_max_length"], sen_len, y = y)
 
             loss.backward()
-
 
             if model_config["fine_tuning"]:
                 warm_up_optimizer.step()
@@ -187,7 +201,7 @@ if model_config["train_file_path"]:
             loss_list.append(loss.item())
 
         model.eval()
-        dev_output, dev_loss = model.decode(dev_x_input, max_len = model_config["sentence_max_length"],
+        dev_output, dev_loss = model.decode(dev_x, max_len = model_config["sentence_max_length"],
                                             sen_len = dev_sen_len, use_cuda = True, dev_y = dev_y)
 
         summary_writer.add_scalars("loss",{"train_loss" : np.mean(loss_list), "dev_loss" : dev_loss.item()}, i)
@@ -214,28 +228,46 @@ if model_config["train_file_path"]:
 
 if model_config["test_file_path"]:
 
-    with open(model_config["model_file_path"] + model_config["model_name"] + "_model_config.json") as f:
+    with open(model_config["model_file_path"] + model_config["model_name"] + "_model_config.json", encoding="utf-8") as f:
         config = json.load(f)
 
     config["test_file_path"] =  model_config["test_file_path"]
     print(config)
 
+    if config["model_structure"] == "bert_bilstm_crf":
+        model = bert_bilstm_crf(
+            pretrain_model_path=config["model_path"],
+            lstm_hidden_size=config["lstm_hidden_size"],
+            num_layers=config["num_layers"],
+            dropout_ratio=config["dropout_ratio"],
+            bidirectional=config["bidirectional"],
+            lable_num=len(config["label2id"]),
+            device=device)
+    elif config["model_structure"] == "bert_crf":
+        model = bert_crf(pretrain_model_path = config["model_path"],
+                         lable_num = len(config["label2id"]),
+                         device = device)
+    elif config["model_structure"] == "w2v_bilstm_crf":
+        model = w2v_bilstm_crf(
+            pretrain_model_path = config["model_path"],
+            pretrain_output_size = config["pretrain_output_size"],
+            lstm_hidden_size = config["lstm_hidden_size"],
+            num_layers = config["num_layers"],
+            dropout_ratio = config["dropout_ratio"],
+            bidirectional = config["bidirectional"],
+            lable_num = len(config["label2id"]),
+            device = device)
 
-    model = bert_bilstm_crf(
-        pretrain_model_path=config["bert_model_path"],
-        lstm_hidden_size=config["lstm_hidden_size"],
-        num_layers=config["num_layers"],
-        dropout_ratio=config["dropout_ratio"],
-        bidirectional=config["bidirectional"],
-        lable_num=len(config["label2id"]),
-        device=device)
-    model.load_state_dict(torch.load(model_config["model_file_path"]+model_config["model_name"]))
+    model.load_state_dict(torch.load(config["model_file_path"]+config["model_name"]))
     model.to(device)
     model.eval()
 
     test_dataset = ner_data_process_machine(
-        file_path=config["test_file_path"], sentence_max_len=config["sentence_max_length"],
-        label2id=config["label2id"], tokenizer_path=config["bert_model_path"])
+        file_path=config["test_file_path"],
+        sentence_max_len=config["sentence_max_length"],
+        model_structure=config["model_structure"],
+        label2id=config["label2id"],
+        tokenizer_path=config["model_path"])
     # dev_dataloader = data.dataloader(dev_dataset,
     #                                    batch_size=model_config["batch_size"], shuffle=True, num_workers=4)
     # 得到验证集的loss和F1，p，r
@@ -248,10 +280,10 @@ if model_config["test_file_path"]:
 
     print("测试集上限P R F1：", f1_eva_ner(transform_back_test_data, source_test_data))
 
-    test_x_input = torch.tensor(test_x, dtype=torch.long).to(device)
-    test_y = torch.tensor(test_y, dtype=torch.long).to(device)
+    # test_x_input = torch.tensor(test_x, dtype=torch.long).to(device)
+    # test_y = torch.tensor(test_y, dtype=torch.long).to(device)
 
-    test_output, test_loss = model.decode(test_x_input, max_len=config["sentence_max_length"],
+    test_output, test_loss = model.decode(test_x, max_len=config["sentence_max_length"],
                                         sen_len=test_sen_len, use_cuda=True, dev_y=test_y)
 
     source_test_data, predict_test_data = \
@@ -262,3 +294,5 @@ if model_config["test_file_path"]:
     print("测试total p, r, f1表现：{}，{}，{}".format(p, r, f1))
     ans_dict = f1_eva_ner_label_level(predict_test_data, source_test_data)
     print("eva_ner_label_level: ", ans_dict)
+    print("-"*200)
+    print("预测结果：",predict_test_data)
