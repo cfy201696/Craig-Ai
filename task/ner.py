@@ -14,7 +14,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 from pytorch_transformers import AdamW, WarmupLinearSchedule
 from process_data.ner_process import ner_data_process_machine
 from model.bert_bilstm_crf import bert_bilstm_crf
-from model.w2v_bilstm_crf import w2v_bilstm_crf
+from model.bilstm_crf import bilstm_crf
 from model.bert_crf import bert_crf
 from torch.utils import data
 from tensorboardX import SummaryWriter
@@ -133,7 +133,7 @@ if model_config["train_file_path"]:
                          lable_num = len(model_config["label2id"]),
                          device = device)
     elif model_config["model_structure"] == "w2v_bilstm_crf":
-        model = w2v_bilstm_crf(
+        model = bilstm_crf(
             pretrain_model_path = model_config["model_path"],
             pretrain_output_size = model_config["pretrain_output_size"],
             lstm_hidden_size = model_config["lstm_hidden_size"],
@@ -248,7 +248,7 @@ if model_config["test_file_path"]:
                          lable_num = len(config["label2id"]),
                          device = device)
     elif config["model_structure"] == "w2v_bilstm_crf":
-        model = w2v_bilstm_crf(
+        model = bilstm_crf(
             pretrain_model_path = config["model_path"],
             pretrain_output_size = config["pretrain_output_size"],
             lstm_hidden_size = config["lstm_hidden_size"],

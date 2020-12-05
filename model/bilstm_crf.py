@@ -9,10 +9,10 @@ from torchcrf import CRF
 sys.path.append("../")
 from layers.utensil import _generate_mask
 
-class w2v_bilstm_crf(base_model):
+class bilstm_crf(base_model):
     def __init__(self, pretrain_model_path = None, word2id = None, pretrain_output_size = 768, lstm_hidden_size = 384,
                  num_layers = 1, dropout_ratio = 0.5, batch_first = True, bidirectional = True, lable_num = 4, device = "cpu"):
-        super(w2v_bilstm_crf, self).__init__()
+        super(bilstm_crf, self).__init__()
 
         if word2id:
             self.word2id = word2id

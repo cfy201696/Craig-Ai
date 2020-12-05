@@ -36,6 +36,8 @@ class bert_bilstm_crf(base_model):
 
         self.device = device
 
+        print("模型加载完成")
+
     def forward(self, x):
         x = x.to(self.device).long()
 
