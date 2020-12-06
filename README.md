@@ -1,6 +1,6 @@
-# 1说明
+# 1 说明
 本项目基于pytorch深度学习框架实现各NLP任务，不断完善中.
-#2 目录
+# 2 目录
 ```.
 ├── data 存放项目数据的目录
 │   ├── ResumeNER 简历实体识别数据
@@ -22,7 +22,7 @@
 ├── requirements.txt
 └── task 各个任务的启动文件
 ```
-#3 环境配置
+# 3 环境配置
 - Linux(建议在Linux下使用,Windows 10目前已经兼容)
 - python3.7
 - 使用Bert模型：下载Bert预训练模型解压到pretrained_model_file/bert下(可新建此目录)，预训练模型下载:链接：https://pan.baidu.com/s/1KauLJeiJUErWu4YdYEuKiA ,提取码：18z2 
@@ -32,9 +32,9 @@
 
 #4 实体识别
 通过task文件夹下ner.py文件进行实体识别的训练和推理,目前已经实现bert bilstm crf、bert crf和word2vec_bilstm_crf模型.
-##4.1 数据格式（每个样本占一行，每行格式如下）
+## 4.1 数据格式（每个样本占一行，每行格式如下）
 ```{"text": "现任长春大学管理学院教授、长春高新技术产业(集团)股份有限公司董事会外部董事。", "entity_list": [{"entity_index": {"begin": 10, "end": 12}, "entity_type": "TITLE", "entity": "教授"}, {"entity_index": {"begin": 31, "end": 38}, "entity_type": "TITLE", "entity": "董事会外部董事"}]}```
-##4.2 参数和使用
+## 4.2 参数和使用
 - -tr 训练集路径
 - -de 验证集路径
 - -te 测试集路径
