@@ -30,7 +30,7 @@
 - 数据集放到data目录下
 - ```pip install -r requirements.txt```
 
-#4 实体识别
+# 4 实体识别
 通过task文件夹下ner.py文件进行实体识别的训练和推理,目前已经实现bert bilstm crf、bert crf和word2vec_bilstm_crf模型.
 ## 4.1 数据格式（每个样本占一行，每行格式如下）
 ```{"text": "现任长春大学管理学院教授、长春高新技术产业(集团)股份有限公司董事会外部董事。", "entity_list": [{"entity_index": {"begin": 10, "end": 12}, "entity_type": "TITLE", "entity": "教授"}, {"entity_index": {"begin": 31, "end": 38}, "entity_type": "TITLE", "entity": "董事会外部董事"}]}```
