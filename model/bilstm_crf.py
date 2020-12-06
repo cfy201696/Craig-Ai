@@ -43,6 +43,8 @@ class bilstm_crf(base_model):
 
         self.device = device
 
+        print("模型加载完成")
+
     def forward(self, x):
         # print(type(x))
         # print(x)
@@ -59,11 +61,6 @@ class bilstm_crf(base_model):
 
         x_input = torch.tensor(x_, device=self.device)
         x_input = x_input.float()
-
-
-        # segments_ids = torch.zeros(x.shape, dtype=torch.long).to(self.device)
-        #
-        # emb_outputs = self.bert(x, token_type_ids=segments_ids)
 
         bilstm_output, _ = self.bilstm(x_input)
 

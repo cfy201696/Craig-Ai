@@ -137,6 +137,7 @@ class ner_data_process_machine(Dataset):
                     y_ += [0] * (self.sentence_max_len - len(y_))
                     self.data.append([text, tokens, y_, i * (self.sentence_max_len - self.begin - self.end),
                                       min(len(text), (i + 1) * (self.sentence_max_len - self.begin - self.end)) - i * (self.sentence_max_len - self.begin - self.end)])
+        print(self.file_path,"数据处理完成")
 
     def get_entity(self, text, y):
         entity_list = []
