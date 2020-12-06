@@ -59,7 +59,7 @@
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 |bert_bilstm_crf(训练)|yes|yes|optional|yes|yes|optional|optional|optional|no|optional|optional|optional|optional|optional|optional|optional|optional|
 |bert_crf(训练)|yes|yes|optional|yes|yes|yes|optional|optional|pos|no|no|no|no|optional|optional|optional|optional|
-|w2v_bilstm_crf|yes|yes|optional|yes|yes|yes|yes|no|yes|no|no|no|no|optional|optional|optional|optional|
+|w2v_bilstm_crf(训练)|yes|yes|optional|yes|yes|yes|yes|no|yes|no|no|no|no|optional|optional|optional|optional|
 |预测|no|no|yes|yes|yes|no|no|no|no|no|no|no|no|no|no|no|no|
 
 
