@@ -116,6 +116,8 @@ if model_config["train_file_path"]:
 
     print("验证集上限P R F1：", f1_eva_ner(transform_back_dev_data, source_dev_data))
 
+    print(sta_error_type(source_dev_data, source_dev_data))
+
     # dev_x_input = torch.tensor(dev_x, dtype=torch.long).to(device)
     # dev_y = torch.tensor(dev_y, dtype=torch.long).to(device)
 
@@ -220,7 +222,7 @@ if model_config["train_file_path"]:
         if f1 > best_f1:
             best_f1 = f1
             model.save_model(model_config["model_file_path"]+model_config["model_name"])
-            print("错误类型和个数：", sta_error_type(source_dev_data, transform_back_dev_data))
+            print("错误类型和个数：", sta_error_type(source_dev_data, predict_dev_data))
             print("label lavel:", ans_dict)
         print("训练完成：{}， 训练集loss：{}，验证集loss：{}，验证集P：{}，验证集R：{}，验证集F1：{}，最高F1：{}".format(
             i, np.mean(loss_list), dev_loss, p, r, f1, best_f1))

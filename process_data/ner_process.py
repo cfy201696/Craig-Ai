@@ -182,6 +182,7 @@ class ner_data_process_machine(Dataset):
                 predict_data.append({"text":text, "entity_list": self.get_entity(text, y)})
                 text = line_data[0]
                 y = line_data[2][self.begin:line_data[4] + 1]
+        predict_data.append({"text": text, "entity_list": self.get_entity(text, y)})
 
         source_data = []
         with open(self.file_path, encoding="utf-8") as f:
