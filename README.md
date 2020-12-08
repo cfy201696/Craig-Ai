@@ -51,7 +51,7 @@
 - -bs batch size
 - -lr 学习率
 - -sml 最大句子长度
-- -e 
+- -e 训练迭代次数
 
 **使用说明：** yes代表需要，no代表不需要，optional代表可选
 
