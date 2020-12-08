@@ -67,7 +67,7 @@
 # 训练（task目录下，使用Bert_Bilsmt_crf模型）
 python -u ner.py -tr ../data/yidu-s4k/train_10.txt -de ../data/yidu-s4k/dev_100.txt -mfp ../data/yidu-s4k/ -mn v1 -lhs 200 -bs 5 -lr 1e-5 -sml 512 -e 2000
 # 训练（task目录下，使用w2v_Bilsmt_crf模型）
-python -u ner.py -tr ../data/yidu-s4k/train_10.txt -de ../data/yidu-s4k/dev_100.txt -mfp ../data/yidu-s4k/ -mn v1 -ms w2v_bilstm_crf -mp ../pretrained_model_file/word2vec/baike_26g_news_13g_novel_229g_chinese.wordvectors -pos 128 -lhs 200 -bs 5 -lr 1e-5 -sml 512 -e 2000# 测试（task目录下）
+python -u ner.py -tr ../data/yidu-s4k/train_10.txt -de ../data/yidu-s4k/dev_100.txt -mfp ../data/yidu-s4k/ -mn v1 -ms w2v_bilstm_crf -mp ../pretrained_model_file/word2vec/baike_26g_news_13g_novel_229g_chinese.wordvectors -pos 128 -lhs 200 -bs 5 -lr 1e-5 -sml 512 -e 2000
 
 # 测试
 python -u ner.py -te ../data/yidu-s4k/dev_100.txt -mfp ../data/yidu-s4k/ -mn v1
