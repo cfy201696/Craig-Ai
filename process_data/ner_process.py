@@ -26,17 +26,17 @@ class ner_data_process_machine(Dataset):
             print("加载词典")
             if self.model_structure == "bert_bilstm_crf" or self.model_structure == "bert_crf":
                 self.tokenizer = BertTokenizer.from_pretrained(tokenizer_path, do_basic_tokenize=True)
-            elif self.model_structure == "w2v_bilstm_crf" or self.model_structure == "bilstm_crf":
+            elif self.model_structure == "w2v_bilstm_crf":
                 # self.tokenizer  = word2vec.load(tokenizer_path)
                 self.tokenizer  = "None"
         else:
             self.tokenizer = tokenizer
 
         # self.data = [] #[原句, start_index, x, y, 小句长度]
-        self.word2id = {}
-        if self.model_structure == "bilstm_crf":
-            self.word2id["UNK"] = 0
-            id = 1
+        # self.word2id = {}
+        # if self.model_structure == "bilstm_crf":
+        #     self.word2id["UNK"] = 0
+        #     id = 1
 
         if label2id:
             self.label2id = label2id
@@ -46,11 +46,11 @@ class ner_data_process_machine(Dataset):
             with open(self.file_path, encoding="utf-8") as f:
                 for line in f:
                     line_json = json.loads(line)
-                    if self.model_structure == "bilstm_crf":
-                        for word in line_json["text"]:
-                            if word not in self.word2id:
-                                self.word2id[word] = id
-                                id += 1
+                    # if self.model_structure == "bilstm_crf":
+                    #     for word in line_json["text"]:
+                    #         if word not in self.word2id:
+                    #             self.word2id[word] = id
+                    #             id += 1
                     for entity in line_json["entity_list"]:
                         entity_type = entity["entity_type"]
                         if "B-" + entity_type not in self.label2id:

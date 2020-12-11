@@ -43,7 +43,7 @@ class bert_bilstm_crf(base_model):
 
         segments_ids = torch.zeros(x.shape, dtype=torch.long).to(self.device)
 
-        emb_outputs = self.bert(x, token_type_ids=segments_ids)
+        emb_outputs = self.bert(x, token_type_ids=segments_ids) # 
 
         bilstm_output, _ = self.bilstm(emb_outputs[0])
 

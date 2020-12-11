@@ -12,13 +12,11 @@ import shutil
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 from pytorch_transformers import AdamW, WarmupLinearSchedule
-from process_data.ner_process import ner_data_process_machine
-from model.bert_bilstm_crf import bert_bilstm_crf
-from model.bilstm_crf import bilstm_crf
-from model.bert_crf import bert_crf
+from process_data.text_classification_process import text_classification_data_process_machine
+from model.bert_softmax import bert_softmax
 from torch.utils import data
 from tensorboardX import SummaryWriter
-from evaluation.ner_evaluation import f1_eva_ner, f1_eva_ner_label_level, sta_error_type
+from evaluation.evaluation import evaluation
 
 parser = argparse.ArgumentParser()
 # 数据集参数
@@ -30,7 +28,7 @@ parser.add_argument("-mn","--model_name", default="v1")
 
 
 # 模型结构参数
-parser.add_argument("-ms","--model_structure", help="模型结构", default="bert_bilstm_crf")
+parser.add_argument("-ms","--model_structure", help="模型结构", default="bert_softmax")
 parser.add_argument("-mp","--model_path", default="../pretrained_model_file/bert/chinese_L-12_H-768_A-12")
 parser.add_argument("-ft","--fine_tuning", help="微调", default=False)
 parser.add_argument("-pos","--pretrain_output_size", help="预训练模型的输出维度", default=768)
@@ -53,7 +51,6 @@ parser.add_argument("-e","--epochs", help="epochs", default=20)
 
 def str_to_bool(string):
     return True if str(string).lower() == 'true' else False
-
 
 args = parser.parse_args()
 model_config = {
@@ -85,7 +82,7 @@ if model_config["train_file_path"]:
 
     summary_writer = SummaryWriter(os.path.join(model_config["model_file_path"],'Result',model_config["model_name"]))
 
-    train_dataset = ner_data_process_machine(file_path = model_config["train_file_path"],
+    train_dataset = text_classification_data_process_machine(file_path = model_config["train_file_path"],
                                              model_structure = model_config["model_structure"],
                                              sentence_max_len = model_config["sentence_max_length"],
                                              tokenizer_path = model_config["model_path"])
@@ -97,7 +94,7 @@ if model_config["train_file_path"]:
     with open(model_config["model_file_path"] + model_config["model_name"] + "_model_config.json", "w+", encoding="utf-8") as f:
         f.write(json.dumps(model_config, ensure_ascii=False))
 
-    dev_dataset = ner_data_process_machine(
+    dev_dataset = text_classification_data_process_machine(
         file_path = model_config["dev_file_path"],
         sentence_max_len = model_config["sentence_max_length"],
         model_structure=model_config["model_structure"],
@@ -112,35 +109,23 @@ if model_config["train_file_path"]:
     source_dev_data, transform_back_dev_data = dev_dataset.transform_data_back(
             dev_dataset.uni_data(copy.deepcopy(dev_text_list), copy.deepcopy(dev_x),
                                  copy.deepcopy(dev_y), copy.deepcopy(dev_start_index), copy.deepcopy(dev_sen_len)))
-
-    print("验证集上限P R F1：", f1_eva_ner(transform_back_dev_data, source_dev_data))
-
-    print(sta_error_type(source_dev_data, source_dev_data))
+    # print(source_dev_data)
+    # print("-"*200)
+    # print(transform_back_dev_data)
+    source_label = [line["label"] for line in source_dev_data]
+    pre_label = [line["label"] for line in transform_back_dev_data]
+    evaluation_result_dev = evaluation(source_label, pre_label, dev_dataset.get_id2label())
+    print("验证集上限P:{} R:{} F1:{} micro_f1:{}".format(evaluation_result_dev[0],
+                                         evaluation_result_dev[1], evaluation_result_dev[2], evaluation_result_dev[3]))
 
     # dev_x_input = torch.tensor(dev_x, dtype=torch.long).to(device)
     # dev_y = torch.tensor(dev_y, dtype=torch.long).to(device)
 
-    if model_config["model_structure"] == "bert_bilstm_crf":
-        model = bert_bilstm_crf(
+
+    print("model_config:",model_config)
+    if model_config["model_structure"] == "bert_softmax":
+        model = bert_softmax(
             pretrain_model_path = model_config["model_path"],
-            lstm_hidden_size = model_config["lstm_hidden_size"],
-            num_layers = model_config["num_layers"],
-            dropout_ratio = model_config["dropout_ratio"],
-            bidirectional = model_config["bidirectional"],
-            lable_num = len(model_config["label2id"]),
-            device = device)
-    elif model_config["model_structure"] == "bert_crf":
-        model = bert_crf(pretrain_model_path = model_config["model_path"],
-                         lable_num = len(model_config["label2id"]),
-                         device = device)
-    elif model_config["model_structure"] == "w2v_bilstm_crf":
-        model = bilstm_crf(
-            pretrain_model_path = model_config["model_path"],
-            pretrain_output_size = model_config["pretrain_output_size"],
-            lstm_hidden_size = model_config["lstm_hidden_size"],
-            num_layers = model_config["num_layers"],
-            dropout_ratio = model_config["dropout_ratio"],
-            bidirectional = model_config["bidirectional"],
             lable_num = len(model_config["label2id"]),
             device = device)
 
@@ -188,7 +173,7 @@ if model_config["train_file_path"]:
             # y = torch.tensor(y, 0.T, dtype=torch.long).to(device)
 
             output = model(x)
-            loss = model.get_loss(output, model_config["sentence_max_length"], sen_len, y = y)
+            loss = model.get_loss(output, y = y)
 
             loss.backward()
 
@@ -202,8 +187,7 @@ if model_config["train_file_path"]:
             loss_list.append(loss.item())
 
         model.eval()
-        dev_output, dev_loss = model.decode(dev_x, max_len = model_config["sentence_max_length"],
-                                            sen_len = dev_sen_len, use_cuda = True, dev_y = dev_y)
+        dev_output, dev_loss = model.decode(dev_x, dev_y = dev_y)
 
         summary_writer.add_scalars("loss",{"train_loss" : np.mean(loss_list), "dev_loss" : dev_loss.item()}, i)
 
@@ -211,20 +195,23 @@ if model_config["train_file_path"]:
             dev_dataset.transform_data_back(
                 dev_dataset.uni_data(dev_text_list, dev_x, dev_output, dev_start_index, dev_sen_len))
 
-        p, r, f1 = f1_eva_ner(predict_dev_data, source_dev_data)
+        evaluation_result = evaluation([line["label"] for line in source_dev_data],
+                                       [line["label"] for line in predict_dev_data], dev_dataset.get_id2label())
 
-        summary_writer.add_scalars("dev_evaluation_total", {"p": p, "r": r, "f1": f1}, i)
-        ans_dict = f1_eva_ner_label_level(predict_dev_data, source_dev_data)
+        # p, r, f1 = f1_eva_ner(predict_dev_data, source_dev_data)
+
+        summary_writer.add_scalars("dev_evaluation_total",
+                                   {"p": evaluation_result[0], "r": evaluation_result[1], "f1": evaluation_result[2]}, i)
+        ans_dict = evaluation_result[-1]
         for key, v in ans_dict.items():
             summary_writer.add_scalars(key, v, i)
 
-        if f1 > best_f1:
-            best_f1 = f1
+        if evaluation_result[2] > best_f1:
+            best_f1 = evaluation_result[2]
             model.save_model(model_config["model_file_path"]+model_config["model_name"])
-            print("错误类型和个数：", sta_error_type(source_dev_data, predict_dev_data))
             print("label lavel:", ans_dict)
         print("训练完成：{}， 训练集loss：{}，验证集loss：{}，验证集P：{}，验证集R：{}，验证集F1：{}，最高F1：{}".format(
-            i, np.mean(loss_list), dev_loss, p, r, f1, best_f1))
+            i, np.mean(loss_list), dev_loss, evaluation_result[0], evaluation_result[1], evaluation_result[2], best_f1))
         print("-"*100)
 
 if model_config["test_file_path"]:
@@ -263,7 +250,7 @@ if model_config["test_file_path"]:
     model.to(device)
     model.eval()
 
-    test_dataset = ner_data_process_machine(
+    test_dataset = text_classification_data_process_machine(
         file_path=config["test_file_path"],
         sentence_max_len=config["sentence_max_length"],
         model_structure=config["model_structure"],
