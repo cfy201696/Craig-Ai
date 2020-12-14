@@ -1,7 +1,6 @@
 import json
 from pytorch_transformers import BertTokenizer
 from torch.utils.data import Dataset
-# from gensim.models import word2vec
 import numpy as np
 
 class text_classification_data_process_machine(Dataset):
@@ -19,8 +18,6 @@ class text_classification_data_process_machine(Dataset):
 
         if self.model_structure == "bert_softmax":
             self.begin, self.end = 1, 1
-        # elif self.model_structure == "w2v_bilstm_crf" or self.model_structure == "bilstm_crf":
-        #     self.begin, self.end = 0, 0
 
         if not tokenizer:
             print("加载词典")
@@ -51,17 +48,7 @@ class text_classification_data_process_machine(Dataset):
         self.transform_data()
 
     def __getitem__(self, item):
-
-        # if self.model_structure == "bert_bilstm_crf" or self.model_structure == "bert_crf":
-        #     return self.data[item][0], np.array(self.data[item][1]).T, np.array(self.data[item][2]).T, self.data[item][
-        #         3], self.data[item][4]
-        # elif self.model_structure == "w2v_bilstm_crf" or self.model_structure == "bilstm_crf":
-        #     return self.data[item][0], self.data[item][1], np.array(self.data[item][2]).T, self.data[item][
-        #         3], self.data[item][4]
-        #
-        # print(self.data[item][0], np.array(self.data[item][1]).T, np.array(self.data[item][2]).T, self.data[item][3], self.data[item][4])
-        #
-        return self.data[item][0], np.array(self.data[item][1]).T, np.array(self.data[item][2]).T, self.data[item][3], self.data[item][4]
+        return self.data[item][0], np.array(self.data[item][1]).T, np.array(self.data[item][2]).T
 
     def __len__(self):
         return len(self.data)
@@ -94,34 +81,23 @@ class text_classification_data_process_machine(Dataset):
                 label = line_json["label"]
                 source_data.append([text, label])
 
-        self.data = []
+        self.data = [] #[原句, x, y]
         for line_data in source_data:
             text, y = line_data[0], line_data[1]
-            tokens_str = ["[CLS]"] * self.begin + list(text) + ["[SEP]"] * self.end
-            tokens = self.tokenizer.convert_tokens_to_ids(tokens_str)
-            tokens += [0] * (self.sentence_max_len - len(tokens))
-            self.data.append([text, tokens, [self.label2id[y]], 0, len(text)])
-                              # min(len(text), (i + 1) * (self.sentence_max_len - self.begin - self.end)) - i * (self.sentence_max_len - self.begin - self.end)])
+            # tokens_str = ["[CLS]"] * self.begin + list(text) + ["[SEP]"] * self.end
+            # tokens = self.tokenizer.convert_tokens_to_ids(tokens_str)
+            # tokens += [0] * (self.sentence_max_len - len(tokens))
+            # self.data.append([text, tokens, [self.label2id[y]]])
+            for i in range(len(text) // (self.sentence_max_len - self.begin - self.end) + 1):
+                if i * (self.sentence_max_len - self.begin - self.end) < len(text):
+                    tokens_str = ["[CLS]"] * self.begin + list(text[i * (self.sentence_max_len - 2):min(len(text), (i + 1) * (self.sentence_max_len - 2))]) + ["[SEP]"] * self.end
 
-            # for i in range(len(line_data[0]) // (self.sentence_max_len - self.begin - self.end) + 1):
-                # if i * (self.sentence_max_len - 2) < min(len(text), (i + 1) * (self.sentence_max_len - 2)):
-                #     tokens_str = ["[CLS]"] * self.begin + list(text[i * (self.sentence_max_len - 2):min(len(text), (i + 1) * (self.sentence_max_len - 2))]) + ["[SEP]"] * self.end
-                #
-                #     if self.model_structure == "bert_softmax":
-                #         tokens = self.tokenizer.convert_tokens_to_ids(tokens_str)
-                #         tokens += [0] * (self.sentence_max_len - len(tokens))
-                #     # elif self.model_structure == "w2v_bilstm_crf":
-                #     #     tokens = tokens_str
-                #     #     tokens = tokens + ["U"] * (self.sentence_max_len - len(tokens))
-                #     #     # tokens = [self.tokenizer(w) for w in tokens]
-                #     #     tokens = ''.join(tokens)
-                #     # elif self.model_structure == "bilstm_crf":
-                #     #     tokens = [self.word2id[x] for x in tokens_str + ["U"] * (self.sentence_max_len - len(tokens))]
-                #     #     tokens = ''.join(tokens)
-                #     # y_ = [0] * self.begin + [self.label2id[x] for x in y[i * (self.sentence_max_len - self.begin - self.end):min(len(text), (i + 1) * (self.sentence_max_len - self.begin - self.end))]] + [0] * self.end
-                #     # y_ += [0] * (self.sentence_max_len - len(y_))
-                #     self.data.append([text, tokens, [self.label2id[y]], i * (self.sentence_max_len - self.begin - self.end),
-                #                       min(len(text), (i + 1) * (self.sentence_max_len - self.begin - self.end)) - i * (self.sentence_max_len - self.begin - self.end)])
+                    if self.model_structure == "bert_softmax":
+                        tokens = self.tokenizer.convert_tokens_to_ids(tokens_str)
+                        tokens += [0] * (self.sentence_max_len - len(tokens))
+                    # y_ = [0] * self.begin + [self.label2id[x] for x in y[i * (self.sentence_max_len - self.begin - self.end):min(len(text), (i + 1) * (self.sentence_max_len - self.begin - self.end))]] + [0] * self.end
+                    # y_ += [0] * (self.sentence_max_len - len(y_))
+                    self.data.append([text, tokens, [self.label2id[y]]])
         print(self.file_path,"数据处理完成")
 
     def transform_data_back(self, data):
@@ -130,7 +106,7 @@ class text_classification_data_process_machine(Dataset):
         :return: {“text”：。。。，“entity_list”:...}
         '''
 
-        # [原句, x, y, start_index, 小句长度] -> [原句, x, y]
+        # [原句, x, [y]] -> [原句, x, [y]]
         predict_data = []
 
         text = data[0][0]
@@ -138,18 +114,23 @@ class text_classification_data_process_machine(Dataset):
         y = data[0][2][0]
 
         for line_data in data[1:]:
-            # if line_data[0] == text:
-            #     pass
-            # else:
-            predict_data.append({"text":text, "label": self.id2label[y]})
-            text = line_data[0]
-            y = line_data[2][0]
+            if line_data[0] == text:
+                pass
+            else:
+                predict_data.append({"text":text, "label": self.id2label[y]})
+                text = line_data[0]
+                y = line_data[2][0]
         predict_data.append({"text": text, "label": self.id2label[y]})
 
         source_data = []
         with open(self.file_path, encoding="utf-8") as f:
             for line in f:
                 source_data.append(json.loads(line))
+
+        # for ls, lp in zip(source_data, predict_data):
+        #     print(ls)
+        #     print("-"*200)
+        #     print(lp)
 
         return source_data, predict_data
 
@@ -158,14 +139,12 @@ class text_classification_data_process_machine(Dataset):
         text_list = batch_data_array[:, 0].tolist()
         x = batch_data_array[:, 1].tolist()
         y = batch_data_array[:, 2].tolist()
-        start_index = batch_data_array[:, 3].tolist()
-        sen_len = batch_data_array[:, 4].tolist()
-        return text_list, x, y, start_index, sen_len
+        return text_list, x, y
 
-    def uni_data(self,dev_text_list, dev_x, dev_y, dev_start_index, dev_sen_len):
+    def uni_data(self,dev_text_list, dev_x, dev_y):
         data = []
-        for d_t, d_x, d_y, d_s_i, d_s_l in zip(dev_text_list, dev_x, dev_y, dev_start_index, dev_sen_len):
-            data.append([d_t, d_x, d_y, d_s_i, d_s_l])
+        for d_t, d_x, d_y in zip(dev_text_list, dev_x, dev_y):
+            data.append([d_t, d_x, d_y])
         return data
 
 

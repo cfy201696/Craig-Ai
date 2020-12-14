@@ -10,25 +10,25 @@ def TP_FP_FN(label, pre, true_label=1):
             FN += 1
     return TP, FP, FN
 
-def evaluation(label, pre, id2label=None):
+def evaluation(label, pre, label2id=None):
 
     assert len(label) == len(pre)
     label_leval = {}
     total_TP, total_FP, total_FN = 0, 0, 0
     total_f1 = 0
 
-    for k, v in id2label.items():
+    for type, id in label2id.items():
         label_, pre_ = [], []
         for l, p in zip(label, pre):
-            label_.append(1 if l == v else 0)
-            pre_.append(1 if p == v else 0)
+            label_.append(1 if l == type else 0)
+            pre_.append(1 if p == type else 0)
         TP, FP, FN = TP_FP_FN(label_, pre_)
 
         p = round(TP / (TP + FP + 1e-8),4)
         r = round(TP / (TP + FN + 1e-8),4)
         f1 = round(2 * p * r / (p + r + 1e-8),4)
 
-        label_leval[v] = {"P":p, "r":r, "F1":f1}
+        label_leval[type] = {"P":p, "r":r, "F1":f1}
 
         total_TP += TP
         total_FP += FP
@@ -40,7 +40,7 @@ def evaluation(label, pre, id2label=None):
     macro_r = total_TP / (total_TP + total_FN + 1e-8)
     macro_f1 = 2 * macro_p * macro_r / (macro_p + macro_r + 1e-8)
 
-    return round(macro_p,4), round(macro_r,4), round(macro_f1,4), round(total_f1 / len(id2label),4), label_leval
+    return round(macro_p,4), round(macro_r,4), round(macro_f1,4), round(total_f1 / len(label2id),4), label_leval
 
 
 
