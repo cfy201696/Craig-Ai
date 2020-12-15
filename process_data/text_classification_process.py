@@ -88,6 +88,7 @@ class text_classification_data_process_machine(Dataset):
                     text = line_json["text"]
                     label = line_json["label"]
                     source_data.append([text, label])
+        print("source_data:",len(source_data))
 
         self.data = [] #[原句, x, y]
         for line_data in source_data:
@@ -100,6 +101,7 @@ class text_classification_data_process_machine(Dataset):
                         tokens = self.tokenizer.convert_tokens_to_ids(tokens_str)
                         tokens += [0] * (self.sentence_max_len - len(tokens))
                     self.data.append([text, tokens, [self.label2id[y]]])
+        print("self.data:", len(self.data))
         print(self.file_path,"数据处理完成")
 
     def transform_data_back(self, data):
@@ -109,6 +111,7 @@ class text_classification_data_process_machine(Dataset):
         '''
 
         # [原句, x, [y]] -> [原句, x, [y]]
+        print("data:", len(data))
         predict_data = []
 
         text = data[0][0]
@@ -123,6 +126,7 @@ class text_classification_data_process_machine(Dataset):
                 text = line_data[0]
                 y = line_data[2][0]
         predict_data.append({"text": text, "label": self.id2label[y]})
+        print("predict_data:", len(predict_data))
 
         source_data = []
         if self.file_path:

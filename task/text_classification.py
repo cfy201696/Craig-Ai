@@ -106,11 +106,11 @@ if model_config["train_file_path"]:
                                        batch_size=model_config["batch_size"], shuffle=False, num_workers=6)
 
     # 得到验证集的loss和F1，p，r
-    dev_text_list, dev_x, dev_y, dev_start_index, dev_sen_len = \
+    dev_text_list, dev_x, dev_y = \
         dev_dataset.extract_data(copy.deepcopy(dev_dataset.get_data()))
     source_dev_data, transform_back_dev_data = dev_dataset.transform_data_back(
             dev_dataset.uni_data(copy.deepcopy(dev_text_list), copy.deepcopy(dev_x),
-                                 copy.deepcopy(dev_y), copy.deepcopy(dev_start_index), copy.deepcopy(dev_sen_len)))
+                                 copy.deepcopy(dev_y)))
 
     evaluation_result_dev = evaluation([line["label"] for line in source_dev_data],
                                        [line["label"] for line in transform_back_dev_data],
