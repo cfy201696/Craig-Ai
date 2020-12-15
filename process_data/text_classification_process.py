@@ -4,8 +4,8 @@ from torch.utils.data import Dataset
 import numpy as np
 
 class text_classification_data_process_machine(Dataset):
-    def __init__(self, file_path, sentence_max_len, model_structure = "bert_softmax",
-                 tokenizer_path = None, label2id = None, tokenizer = None):
+    def __init__(self, file_path = None, sentence_max_len = 512, model_structure = "bert_softmax",
+                 tokenizer_path = None, label2id = None, tokenizer = None, data = None):
         '''
         :param file_path:文件路径
         :param sentence_max_len:最大句子长度
@@ -45,6 +45,8 @@ class text_classification_data_process_machine(Dataset):
         for k, v in self.label2id.items():
             self.id2label[v] = k
 
+        self.data = data
+
         self.transform_data()
 
     def __getitem__(self, item):
@@ -74,20 +76,22 @@ class text_classification_data_process_machine(Dataset):
         '''
 
         source_data = []
-        with open(self.file_path, encoding="utf-8") as f:
-            for line in f:
-                line_json = json.loads(line)
+        if self.data:
+            for line_json in self.data:
                 text = line_json["text"]
                 label = line_json["label"]
                 source_data.append([text, label])
+        else:
+            with open(self.file_path, encoding="utf-8") as f:
+                for line in f:
+                    line_json = json.loads(line)
+                    text = line_json["text"]
+                    label = line_json["label"]
+                    source_data.append([text, label])
 
         self.data = [] #[原句, x, y]
         for line_data in source_data:
             text, y = line_data[0], line_data[1]
-            # tokens_str = ["[CLS]"] * self.begin + list(text) + ["[SEP]"] * self.end
-            # tokens = self.tokenizer.convert_tokens_to_ids(tokens_str)
-            # tokens += [0] * (self.sentence_max_len - len(tokens))
-            # self.data.append([text, tokens, [self.label2id[y]]])
             for i in range(len(text) // (self.sentence_max_len - self.begin - self.end) + 1):
                 if i * (self.sentence_max_len - self.begin - self.end) < len(text):
                     tokens_str = ["[CLS]"] * self.begin + list(text[i * (self.sentence_max_len - 2):min(len(text), (i + 1) * (self.sentence_max_len - 2))]) + ["[SEP]"] * self.end
@@ -95,8 +99,6 @@ class text_classification_data_process_machine(Dataset):
                     if self.model_structure == "bert_softmax":
                         tokens = self.tokenizer.convert_tokens_to_ids(tokens_str)
                         tokens += [0] * (self.sentence_max_len - len(tokens))
-                    # y_ = [0] * self.begin + [self.label2id[x] for x in y[i * (self.sentence_max_len - self.begin - self.end):min(len(text), (i + 1) * (self.sentence_max_len - self.begin - self.end))]] + [0] * self.end
-                    # y_ += [0] * (self.sentence_max_len - len(y_))
                     self.data.append([text, tokens, [self.label2id[y]]])
         print(self.file_path,"数据处理完成")
 
@@ -123,14 +125,10 @@ class text_classification_data_process_machine(Dataset):
         predict_data.append({"text": text, "label": self.id2label[y]})
 
         source_data = []
-        with open(self.file_path, encoding="utf-8") as f:
-            for line in f:
-                source_data.append(json.loads(line))
-
-        # for ls, lp in zip(source_data, predict_data):
-        #     print(ls)
-        #     print("-"*200)
-        #     print(lp)
+        if self.file_path:
+            with open(self.file_path, encoding="utf-8") as f:
+                for line in f:
+                    source_data.append(json.loads(line))
 
         return source_data, predict_data
 
