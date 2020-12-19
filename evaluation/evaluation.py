@@ -11,11 +11,15 @@ def TP_FP_FN(label, pre, true_label=1):
     return TP, FP, FN
 
 def evaluation(label, pre, label2id=None):
+    print(label[:20])
+    print("-"*100)
+    print(pre[:20])
 
     assert len(label) == len(pre)
     label_leval = {}
     total_TP, total_FP, total_FN = 0, 0, 0
-    total_f1 = 0
+    total_p, total_r, total_f1 = 0, 0, 0
+
 
     for type, id in label2id.items():
         label_, pre_ = [], []
@@ -33,15 +37,18 @@ def evaluation(label, pre, label2id=None):
         total_TP += TP
         total_FP += FP
         total_FN += FN
+        total_p += p
+        total_r += r
         total_f1 += f1
 
-    # macro_f1
-    macro_p = total_TP / (total_TP + total_FP + 1e-8)
-    macro_r = total_TP / (total_TP + total_FN + 1e-8)
-    macro_f1 = 2 * macro_p * macro_r / (macro_p + macro_r + 1e-8)
 
-    return round(macro_p,4), round(macro_r,4), round(macro_f1,4), round(total_f1 / len(label2id),4), label_leval
+    # micro_f1
+    micro_p = total_TP / (total_TP + total_FP + 1e-8)
+    micro_r = total_TP / (total_TP + total_FN + 1e-8)
+    micro_f1 = 2 * micro_p * micro_r / (micro_p + micro_r + 1e-8)
 
+    return round(total_p / len(label2id),4), round(total_r / len(label2id),4), round(total_f1 / len(label2id),4),\
+           round(micro_f1,4), label_leval
 
 
 

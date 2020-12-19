@@ -80,6 +80,7 @@ class text_classification_data_process_machine(Dataset):
             for line_json in self.data:
                 text = line_json["text"]
                 label = line_json["label"]
+                # print(self.tokenizer.tokenize(text))
                 source_data.append([text, label])
         else:
             with open(self.file_path, encoding="utf-8") as f:
@@ -87,21 +88,27 @@ class text_classification_data_process_machine(Dataset):
                     line_json = json.loads(line)
                     text = line_json["text"]
                     label = line_json["label"]
+                    # print(text)
+                    # print(self.tokenizer.tokenize(text))
                     source_data.append([text, label])
         print("source_data:",len(source_data))
 
         self.data = [] #[原句, x, y]
         for line_data in source_data:
             text, y = line_data[0], line_data[1]
-            for i in range(len(text) // (self.sentence_max_len - self.begin - self.end) + 1):
-                if i * (self.sentence_max_len - self.begin - self.end) < len(text):
-                    tokens_str = ["[CLS]"] * self.begin + list(text[i * (self.sentence_max_len - 2):min(len(text), (i + 1) * (self.sentence_max_len - 2))]) + ["[SEP]"] * self.end
+            text_tokens = self.tokenizer.tokenize(text)
+            for i in range(len(text_tokens) // (self.sentence_max_len - self.begin - self.end) + 1):
+                if i * (self.sentence_max_len - self.begin - self.end) < len(text_tokens):
+                    tokens_str = ["[CLS]"] * self.begin + \
+                                 text_tokens[i * (self.sentence_max_len -  - self.begin - self.end):min(len(text_tokens),
+                                    (i + 1) * (self.sentence_max_len -  - self.begin - self.end))] + ["[SEP]"] * self.end
 
                     if self.model_structure == "bert_softmax":
                         tokens = self.tokenizer.convert_tokens_to_ids(tokens_str)
                         tokens += [0] * (self.sentence_max_len - len(tokens))
                     self.data.append([text, tokens, [self.label2id[y]]])
         print("self.data:", len(self.data))
+        # print(self.data[:5])
         print(self.file_path,"数据处理完成")
 
     def transform_data_back(self, data):

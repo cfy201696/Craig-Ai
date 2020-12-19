@@ -114,7 +114,7 @@ if model_config["train_file_path"]:
 
     evaluation_result_dev = evaluation([line["label"] for line in source_dev_data],
                                        [line["label"] for line in transform_back_dev_data],
-                                       dev_dataset.get_id2label())
+                                       dev_dataset.get_label2id())
     print("验证集上限P:{} R:{} F1:{} micro_f1:{}".format(evaluation_result_dev[0],
                                          evaluation_result_dev[1], evaluation_result_dev[2], evaluation_result_dev[3]))
 
@@ -162,7 +162,7 @@ if model_config["train_file_path"]:
         model.train()
         for idx, batch_data in enumerate(train_dataloader):
             batch_data_array = np.array(batch_data)
-            _, x, y, __, sen_len = batch_data[0], batch_data[1], batch_data[2], batch_data[3], batch_data[4]
+            _, x, y = batch_data[0], batch_data[1], batch_data[2]
             output = model(x)
             loss = model.get_loss(output, y = y)
             loss.backward()
@@ -189,7 +189,7 @@ if model_config["train_file_path"]:
         # 计算推理验证指标
         source_dev_data, predict_dev_data = \
             dev_dataset.transform_data_back(
-                dev_dataset.uni_data(dev_text_list, dev_x, dev_output, dev_start_index, dev_sen_len))
+                dev_dataset.uni_data(dev_text_list, dev_x, dev_output))
 
         evaluation_result = evaluation([line["label"] for line in source_dev_data],
                                        [line["label"] for line in predict_dev_data], dev_dataset.get_label2id())
