@@ -100,8 +100,8 @@ class text_classification_data_process_machine(Dataset):
             for i in range(len(text_tokens) // (self.sentence_max_len - self.begin - self.end) + 1):
                 if i * (self.sentence_max_len - self.begin - self.end) < len(text_tokens):
                     tokens_str = ["[CLS]"] * self.begin + \
-                                 text_tokens[i * (self.sentence_max_len -  - self.begin - self.end):min(len(text_tokens),
-                                    (i + 1) * (self.sentence_max_len -  - self.begin - self.end))] + ["[SEP]"] * self.end
+                                 text_tokens[i * (self.sentence_max_len - self.begin - self.end):min(len(text_tokens),
+                                    (i + 1) * (self.sentence_max_len - self.begin - self.end))] + ["[SEP]"] * self.end
 
                     if self.model_structure == "bert_softmax":
                         tokens = self.tokenizer.convert_tokens_to_ids(tokens_str)
